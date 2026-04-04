@@ -19,6 +19,7 @@ public class EmailServiceImpl implements EmailService {
                                       String leaveStatus, String reason) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
+        message.setFrom("ankurkarshreyash07@gmail.com");
         message.setSubject("Leave Request " + leaveStatus);
         message.setText(
             "Dear " + employeeName + ",\n\n" +
@@ -34,6 +35,7 @@ public class EmailServiceImpl implements EmailService {
                                   Double netSalary, Integer month, Integer year) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
+        message.setFrom("ankurkarshreyash07@gmail.com");
         message.setSubject("Payslip for " + month + "/" + year);
         message.setText(
             "Dear " + employeeName + ",\n\n" +
@@ -48,6 +50,7 @@ public class EmailServiceImpl implements EmailService {
     public void sendWelcomeEmail(String toEmail, String employeeName, String username) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(toEmail);
+        message.setFrom("ankurkarshreyash07@gmail.com");
         message.setSubject("Welcome to Employee Management System");
         message.setText(
             "Dear " + employeeName + ",\n\n" +
