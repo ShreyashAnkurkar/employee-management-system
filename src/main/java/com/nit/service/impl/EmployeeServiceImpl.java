@@ -13,6 +13,8 @@ import com.nit.entity.Employee.EmployeeStatus;
 import com.nit.exception.ResourceNotFoundException;
 import com.nit.repository.DepartmentRepository;
 import com.nit.repository.EmployeeRepository;
+import com.nit.repository.LeaveRepository;
+import com.nit.repository.PayrollRepository;
 import com.nit.service.EmployeeService;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,8 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final DepartmentRepository departmentRepository;
+    private final LeaveRepository leaveRepository;
+    private final PayrollRepository payrollRepository;
 
     @Override
     public EmployeeResponse createEmployee(EmployeeRequest request) {
@@ -97,9 +101,13 @@ public class EmployeeServiceImpl implements EmployeeService {
     public void deleteEmployee(Long id) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
+        
+        // Delete related leaves and payrolls first
+        leaveRepository.deleteAll(leaveRepository.findByEmployeeId(id));
+        payrollRepository.deleteAll(payrollRepository.findByEmployeeId(id));
+        
         employeeRepository.delete(employee);
     }
-
     // Helper — converts Entity to Response DTO
     private EmployeeResponse mapToResponse(Employee employee) {
         return EmployeeResponse.builder()
