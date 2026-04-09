@@ -16,8 +16,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class LeaveRequest {
 
-    @NotNull(message = "Employee ID is required")
-    private Long employeeId;
+	private Long employeeId;
 
     @NotNull(message = "Start date is required")
     private LocalDate startDate;

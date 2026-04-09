@@ -1,5 +1,7 @@
 package com.nit.config;
 
+import com.nit.security.JwtAuthFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,10 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.nit.security.JwtAuthFilter;
-
-import lombok.RequiredArgsConstructor;
-
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -36,7 +34,18 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/error").permitAll()
+                .requestMatchers("/api/auth/**", "/error").permitAll()
+
+                // Admin only
+                .requestMatchers("/api/v1/employees/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/departments/**").hasAnyRole("ADMIN", "HR")
+                .requestMatchers("/api/v1/payrolls/**").hasAnyRole("ADMIN", "HR")
+                .requestMatchers("/api/v1/leaves/*/status").hasAnyRole("ADMIN", "HR")
+                .requestMatchers("/api/v1/leaves").hasAnyRole("ADMIN", "HR")
+
+                // Employee endpoints
+                .requestMatchers("/api/v1/employee/**").hasAnyRole("EMPLOYEE", "ADMIN", "HR")
+
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess
@@ -47,6 +56,7 @@ public class SecurityConfig {
 
         return http.build();
     }
+
     @Bean
     public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
