@@ -3,6 +3,7 @@ package com.nit.service.impl;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.nit.dto.request.EmployeeRequest;
@@ -10,11 +11,15 @@ import com.nit.dto.response.EmployeeResponse;
 import com.nit.entity.Department;
 import com.nit.entity.Employee;
 import com.nit.entity.Employee.EmployeeStatus;
+import com.nit.entity.Role;
+import com.nit.entity.User;
 import com.nit.exception.ResourceNotFoundException;
 import com.nit.repository.DepartmentRepository;
 import com.nit.repository.EmployeeRepository;
 import com.nit.repository.LeaveRepository;
 import com.nit.repository.PayrollRepository;
+import com.nit.repository.RoleRepository;
+import com.nit.repository.UserRepository;
 import com.nit.service.EmployeeService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +30,9 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final DepartmentRepository departmentRepository;
+    private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
     private final LeaveRepository leaveRepository;
     private final PayrollRepository payrollRepository;
 
@@ -32,6 +40,10 @@ public class EmployeeServiceImpl implements EmployeeService {
     public EmployeeResponse createEmployee(EmployeeRequest request) {
         if (employeeRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Employee already exists with email: " + request.getEmail());
+        }
+
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username already taken: " + request.getUsername());
         }
 
         Department department = departmentRepository.findById(request.getDepartmentId())
@@ -50,6 +62,20 @@ public class EmployeeServiceImpl implements EmployeeService {
                 .build();
 
         Employee saved = employeeRepository.save(employee);
+
+        // Auto-create user account for employee
+        Role employeeRole = roleRepository.findByName(com.nit.entity.Role.RoleName.ROLE_EMPLOYEE)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee role not found"));
+
+        User user = User.builder()
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .role(employeeRole)
+                .employee(saved)
+                .build();
+
+        userRepository.save(user);
+
         return mapToResponse(saved);
     }
 
@@ -101,14 +127,12 @@ public class EmployeeServiceImpl implements EmployeeService {
     public void deleteEmployee(Long id) {
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
-        
-        // Delete related leaves and payrolls first
+
         leaveRepository.deleteAll(leaveRepository.findByEmployeeId(id));
         payrollRepository.deleteAll(payrollRepository.findByEmployeeId(id));
-        
         employeeRepository.delete(employee);
     }
-    // Helper — converts Entity to Response DTO
+
     private EmployeeResponse mapToResponse(Employee employee) {
         return EmployeeResponse.builder()
                 .id(employee.getId())
